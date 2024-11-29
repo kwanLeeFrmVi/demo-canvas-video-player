@@ -1,8 +1,6 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import p5 from "p5";
 
 interface VideoPlayerProps {
@@ -29,82 +27,87 @@ export default function VideoPlayer({
   const videoRef = useRef<any>(null);
   const [isPlaying, setIsPlaying] = useState(false);
 
-  const sketch: ISketch = (p) => {
-    p.preload = async () => {
-      try {
-        const mediaElement = p.createVideo([""]);
-        videoRef.current = mediaElement;
-        mediaElement.showControls();
-        mediaElement.hide();
-        //
-        const _videoUrlEncryted = btoa(videoUrl + "?t=" + Date.now()); // Encrypt URL using Base64 encoding
-        // Use the streaming API endpoint directly
-        const streamUrl = `/api/v1/stream?u=${encodeURIComponent(
-          _videoUrlEncryted
-        )}`;
-        console.log("Setting video source to:", streamUrl);
-        mediaElement.elt.src = streamUrl;
+  const sketch: ISketch = useCallback(
+    (p) => {
+      p.preload = async () => {
+        try {
+          const mediaElement = p.createVideo([""]);
+          videoRef.current = mediaElement;
+          mediaElement.showControls();
+          mediaElement.hide();
+          //
+          const _videoUrlEncryted = btoa(videoUrl + "?t=" + Date.now()); // Encrypt URL using Base64 encoding
+          // Use the streaming API endpoint directly
+          const streamUrl = `/api/v1/stream?u=${encodeURIComponent(
+            _videoUrlEncryted
+          )}`;
+          console.log("Setting video source to:", streamUrl);
+          mediaElement.elt.src = streamUrl;
 
-        // Add error handler for video element
-        mediaElement.elt.onerror = (e: any) => {
-          console.error("Video error:", e.message, e);
-        };
+          // Add error handler for video element
+          mediaElement.elt.onerror = (e: any) => {
+            console.error("Video error:", e.message, e);
+          };
 
-        // Add load handler
-        mediaElement.elt.onloadeddata = () => {
-          console.log("Video loaded successfully");
-        };
+          // Add load handler
+          mediaElement.elt.onloadeddata = () => {
+            console.log("Video loaded successfully");
+          };
 
-        // Add metadata handler
-        mediaElement.elt.onloadedmetadata = () => {
-          console.log("Video metadata loaded");
-        };
+          // Add metadata handler
+          mediaElement.elt.onloadedmetadata = () => {
+            console.log("Video metadata loaded");
+          };
 
-        // Add progress handler
-        mediaElement.elt.onprogress = () => {
-          const buffered = mediaElement.elt.buffered;
-          if (buffered.length > 0) {
-            console.log(`Buffered: ${buffered.start(0)} to ${buffered.end(0)}`);
-          }
-        };
-      } catch (err) {
-        console.error("Setup error:", err);
-      }
-    };
-    p.setup = async () => {
-      p.createCanvas(width, height);
-      videoRef.current.elt.play();
-    };
-
-    p.draw = () => {
-      p.background(10);
-      if (videoRef.current) {
-        p.image(videoRef.current, 0, 0, width, height);
-      }
-    };
-
-    p.mousePressed = () => {
-      if (videoRef.current?.elt?.readyState >= 1) {
-        // DO not remove below code, this prevents Video element from showing in dom
-        const videoElement = document.querySelector("video");
-        if (videoElement) videoElement.remove();
-        if (videoRef.current?.elt) {
-          if (videoRef.current.elt.paused) {
-            videoRef.current.elt.play().catch((err: any) => {
-              console.error("Play error:", err);
-            });
-            setIsPlaying(true);
-          } else {
-            videoRef.current.elt.pause();
-            setIsPlaying(false);
-          }
-          // Keep video element in DOM for now
+          // Add progress handler
+          mediaElement.elt.onprogress = () => {
+            const buffered = mediaElement.elt.buffered;
+            if (buffered.length > 0) {
+              console.log(
+                `Buffered: ${buffered.start(0)} to ${buffered.end(0)}`
+              );
+            }
+          };
+        } catch (err) {
+          console.error("Setup error:", err);
         }
-      } else {
-        alert("Video not fully loaded yet");
-      }
-    };
-  };
+      };
+      p.setup = async () => {
+        p.createCanvas(width, height);
+        videoRef.current.elt.play();
+      };
+
+      p.draw = () => {
+        p.background(10);
+        if (videoRef.current) {
+          p.image(videoRef.current, 0, 0, width, height);
+        }
+      };
+
+      p.mousePressed = () => {
+        if (videoRef.current?.elt?.readyState >= 1) {
+          // DO not remove below code, this prevents Video element from showing in dom
+          const videoElement = document.querySelector("video");
+          if (videoElement) videoElement.remove();
+          if (videoRef.current?.elt) {
+            if (videoRef.current.elt.paused) {
+              videoRef.current.elt.play().catch((err: any) => {
+                console.error("Play error:", err);
+              });
+              setIsPlaying(true);
+            } else {
+              videoRef.current.elt.pause();
+              setIsPlaying(false);
+            }
+            // Keep video element in DOM for now
+          }
+        } else {
+          alert("Video not fully loaded yet");
+        }
+      };
+    },
+    [height, videoUrl, width]
+  );
 
   useEffect(() => {
     const setupP5 = async () => {
@@ -123,7 +126,7 @@ export default function VideoPlayer({
         p5Ref.current.remove();
       }
     };
-  }, [videoUrl, width, height]);
+  }, [videoUrl, width, height, sketch]);
 
   return (
     <div style={{ position: "relative", width, height }}>
