@@ -35,10 +35,9 @@ export default function VideoPlayer({
         try {
           const mediaElement = p.createVideo([""]);
           videoRef.current = mediaElement;
-          mediaElement.showControls();
           mediaElement.hide();
           //
-          const _videoUrlEncryted = btoa(videoUrl + "?t=" + Date.now()); // Encrypt URL using Base64 encoding
+          const _videoUrlEncryted = btoa(videoUrl + "?t=" + Date.now()); //  using Base64 encoding
           // Use the streaming API endpoint directly
           const streamUrl = `/api/v1/stream?u=${encodeURIComponent(
             _videoUrlEncryted
